@@ -1,4 +1,5 @@
 #include <Servo.h>
+#include <Process.h>
 /*
  * 6 degrees of freedom
  * heave thrusters(hL,hR)
@@ -25,6 +26,7 @@
  
 */
 //Create Servos
+
 Servo hL;
 Servo hR;
 Servo sFL;
@@ -32,32 +34,126 @@ Servo sBL;
 Servo sFR;
 Servo sBR;
 //Create respecitve pins
-int hLp;
-int hRp;
-int sFLp;
+int hLp=2;
+int hRp=8;
+int sFLp=27;
 int sFRp;
 int sBLp;
 int sBRp;
 
 void setup() {
+  //create python crossover
+
+  //create serial port, 9600bps
+  Serial.begin(19200);
+  int thrust = 0;
+  //attach pin ints to servos
   hL.attach(hLp);
   hR.attach(hRp);
   sFL.attach(sFLp);
   sBL.attach(sBLp);
   sFR.attach(sFRp);
   sBR.attach(sBRp);
-  
-  servo.writeMicroseconds(1500); // send "stop" signal to ESC.
-
-  delay(7000); // delay to allow the ESC to recognize the stopped signal
+  //Initialize all thrusters
+  hL.writeMicroseconds(1500); 
+  hR.writeMicroseconds(1500);
+  sFL.writeMicroseconds(1500);
+  sFR.writeMicroseconds(1500);
+  sBL.writeMicroseconds(1500);
+  sBR.writeMicroseconds(1500);
+  //delay for ESC recognization
+  delay(5000);
+  //delay to allow the ESC to recognize the stopped signal
 }
 
 void loop() {
-  int signal = 1700; // Set signal value, which should be between 1100 and 1900
-  int 
-  hL.writeMicroseconds(signal);
-  hR.writeMicroseconds(signal);
- 
-  
-  // Send signal to ESC.
+  String str = "  ";
+  int thrust=0;
+  /*Commands are: 
+   * Y-yaw, R-roll, S-sway, SS-surge, H-heave
+   * combined with
+   * L-left, R-right, F-forward, B-back,U-up, D-down
+   * command format is "direction-thrust"
+   * thrust is rated from 01-05, 05 being most powerful
+   * e.g LR-02
+  */
+   if(Serial.available()){
+      //isolate direction string
+      str=Serial.readStringUntil('-');
+      //isolate thrust int
+      thrust=Serial.readString().toInt();
+      //output command
+      Serial.print(str);
+      Serial.print(" at thrust: ");
+      Serial.print(thrust);
+      Serial.println();
+      /*max reverse pwm is 1150, max forward pwm is 1850, deadband is at 1500*/
+      /*range is 350 each way, so increments of 70 every time*/
+      int pwm = 1500+70*thrust;
+      //for now, assign each direction a number for switch statement(wont matter for xbox)
+      //LY-1 RY-2 LR-3 RR-4 LS-5 RS-6 FSS-7 BSS-8 UH-9 DH-10
+      if(str=="LY"){
+        //Yaw Left: (sFR,sBR)+(-sFL,-sBL)
+        sFR.writeMicroseconds(pwm);
+        sBR.writeMicroseconds(pwm);
+        sFL.writeMicroseconds(-pwm);
+        sBL.writeMicroseconds(-pwm);        
+       }
+      else if(str=="RY"){
+        //Yaw Right: (-sFR,-sBR)+(sFL,sBL)
+        sFR.writeMicroseconds(-pwm);
+        sBR.writeMicroseconds(-pwm);
+        sFL.writeMicroseconds(pwm);
+        sBL.writeMicroseconds(pwm);
+        }
+      else if(str=="LR"){
+        //Roll Left: (-hL,hR)
+        hL.writeMicroseconds(-pwm);
+        hR.writeMicroseconds(pwm);
+        }
+      else if(str=="RR"){
+        //Roll Right: (hL,-hR)
+        hL.writeMicroseconds(pwm);
+        hR.writeMicroseconds(-pwm);
+        }
+      else if(str=="LS"){
+        //Sway Left: (sFR,-sBR)+(-sFL,sBL)
+        sFR.writeMicroseconds(pwm);
+        sBR.writeMicroseconds(-pwm);
+        sFL.writeMicroseconds(-pwm);
+        sBL.writeMicroseconds(pwm);
+        }
+      else if(str=="RS"){
+        //Sway Right: (sFL,-sBL)+(-sFR,sBR)
+        sFR.writeMicroseconds(-pwm);
+        sBR.writeMicroseconds(pwm);
+        sFL.writeMicroseconds(pwm);
+        sBL.writeMicroseconds(-pwm);
+        }
+      else if(str=="FSS"){
+        //Surge Forward: (sFL,sBL)+(sFR,sBR)
+        sFR.writeMicroseconds(pwm);
+        sBR.writeMicroseconds(pwm);
+        sFL.writeMicroseconds(pwm);
+        sBL.writeMicroseconds(pwm);
+        }
+      else if(str=="BSS"){
+        //Surge Back: (-sFL,-sBL)+(-sFR,-sBR)
+        sFR.writeMicroseconds(-pwm);
+        sBR.writeMicroseconds(-pwm);
+        sFL.writeMicroseconds(-pwm);
+        sBL.writeMicroseconds(-pwm);
+        }
+      else if(str=="UH"){
+        //Heave Up: (hR,hL)
+        hR.writeMicroseconds(pwm);
+        hL.writeMicroseconds(pwm);
+        }
+      else if(str=="DH"){
+        //Heave Down: (-hR,-hL)
+        hR.writeMicroseconds(-pwm);
+        hL.writeMicroseconds(-pwm);
+        }
+      //^convert to switch statement after xbox integrate
+    }
 }
