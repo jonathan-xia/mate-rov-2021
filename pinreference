@@ -1,0 +1,8 @@
+ESCs
+Arduino Pins:
+35(ESC 1)-FL Thruster
+37(ESC 2)-ML Thruster
+39(ESC 3)-BL Thruster
+41(ESC 4)-FR Thruster
+43(ESC 5)-MR Thruster
+45(ESC 6)-BR Thruster
