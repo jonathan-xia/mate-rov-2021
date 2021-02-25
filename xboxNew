@@ -6,8 +6,7 @@ BLACK = pygame.Color('black')
 WHITE = pygame.Color('white')
 
 # Open Serial port
-arduino = serial.Serial('/dev/tty.usbmodem1411101', 19200)
-arduino.write("hi")
+arduino = serial.Serial('/dev/tty.usbmodem143201', 19200)
 
 # This is a simple class that will help us print to the screen.
 # It has nothing to do with the joysticks, just outputting the
@@ -103,10 +102,12 @@ while not done:
         # Left Joystick X axis
         axis = joystick.get_axis(0)
         textPrint.tprint(screen, "{} Axis LJoyX value: {:>6.3f}".format(0, axis))
+        #arduino.write("LS")
 
         # Left Joystick Y axis
         axis = joystick.get_axis(1)
         textPrint.tprint(screen, "{} Axis LJoyY value: {:>6.3f}".format(1, axis))
+        #arduino.write("RS")
 
         # Left Trigger, value from -1 to 1
         axis = joystick.get_axis(2)
@@ -115,10 +116,12 @@ while not done:
         # Right Joystick X axis
         axis = joystick.get_axis(3)
         textPrint.tprint(screen, "{} Axis RJoyX value: {:>6.3f}".format(3, axis))
+        #arduino.write("RY")
 
         # Right Joystick Y axis
         axis = joystick.get_axis(4)
         textPrint.tprint(screen, "{} Axis RJoyY value: {:>6.3f}".format(4, axis))
+        #arduino.write("LY")
 
         # Right Trigger, value from -1 to 1
         axis = joystick.get_axis(5)
@@ -134,9 +137,14 @@ while not done:
         button = joystick.get_button(0)
         textPrint.tprint(screen,
                          "{:>2} Button A value: {}".format(0, button))
+        #if (button > 0):
+        #    arduino.write("UPHEAVE")
+
         button = joystick.get_button(1)
         textPrint.tprint(screen,
                          "{:>2} Button B value: {}".format(1, button))
+        #arduino.write("DH")
+
         button = joystick.get_button(2)
         textPrint.tprint(screen,
                          "{:>2} Button X value: {}".format(2, button))
@@ -193,6 +201,8 @@ while not done:
         textPrint.unindent()
 
 #        textPrint.unindent()
+
+        print(arduino.read())
 
     #
     # ALL CODE TO DRAW SHOULD GO ABOVE THIS COMMENT
