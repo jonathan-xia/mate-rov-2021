@@ -1,224 +1,98 @@
-#include <Servo.h>
-#include <Process.h>
-#include <PID_v1.h>
-#include <ICM_20948.h>
+#include<Servo.h>
+ //2, 3, 4, 5, 6, 7, 46
 
-/*
- * 6 degrees of freedom
- * heave thrusters(hL,hR)
- * Surge Thrusters(sFL, sFR)(servo front left, servo front right)
- * Surge Thrusters 2(sBL, sBR)(servo front left, servo front right)
- * 
- *Thruster Combinations
- ** "-" here means reversing thruster polarity
- * //created with the assumption of surge thrusters being oriented in same direction, facing forward
- * forward meaning that when the thrusters are activated, they will propel the body forward
- * //created with assumption that heave thrusters are oriented facing up
- *Surge Back: (-sFL,-sBL)+(-sFR,-sBR)
- *Surge Forward: (sFL,sBL)+(sFR,sBR)
- *Heave Up: (hR,hL)
- *Heave Down: (-hR,-hL)
- *Sway Left: (sFR,-sBR)+(-sFL,sBL)
- *Sway Right: (sFL,-sBL)+(-sFR,sBR)
- *Yawing left would be turning the entire body to face left
- *Yaw Left: (sFR,sBR)+(-sFL,-sBL)
- *Yaw Right: (-sFR,-sBR)+(sFL,sBL)
- **rolling left would be tilting the left side of the body down. v.v
- *Roll Left: (-hL,hR)
- *Roll Right: (hL,-hR)
+ Servo front_right;
+ Servo front_left;
+ Servo back_right;
+ Servo back_left;
+ Servo mid_right;
+ Servo mid_left;
+ Servo claw;
  
-*/
-//Create Servos
+ void setup() {
+   // put your setup code here, to run once:
+     Serial.begin(9600);  
+     Serial.println("RESET");
+     front_right.attach(41);
+     front_left.attach(35);
+     back_right.attach(45); //4 and  46
+     back_left.attach(39);
+     mid_right.attach(43);
+     mid_left.attach(37);
+     claw.attach(11);
+     front_right.writeMicroseconds(1500);
+     front_left.writeMicroseconds(1500);
+     back_right.writeMicroseconds(1500);
+     back_left.writeMicroseconds(1500);
+     mid_right.writeMicroseconds(1500);
+     mid_left.writeMicroseconds(1500);
+     claw.writeMicroseconds(750);
+     delay(7000);
+     Serial.println("ready");
+ }
 
-Servo hL;
-Servo hR;
-Servo sFL;
-Servo sBL;
-Servo sFR;
-Servo sBR;
-//Create respecitve pins
-int hLp=37;
-int hRp=43;
-int sFLp=35;
-int sFRp=41;
-int sBLp=39;
-int sBRp=45;
-
-//Create PID
-double Setpoint, Input, Output;
-double Kp=2, Ki=2, Kd=2;
-PID thePID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
-
-void setup() {
-  //create python crossover
-
-  //create serial port, 9600bps
-  Serial.begin(19200);
-  int pwm = 0;
-  //attach pin ints to servos
-  hL.attach(hLp);
-  hR.attach(hRp);
-  sFL.attach(sFLp);
-  sBL.attach(sBLp);
-  sFR.attach(sFRp);
-  sBR.attach(sBRp);
-  //Initialize all thrusters
-  hL.writeMicroseconds(1500); 
-  hR.writeMicroseconds(1500);
-  sFL.writeMicroseconds(1500);
-  sFR.writeMicroseconds(1500);
-  sBL.writeMicroseconds(1500);
-  sBR.writeMicroseconds(1500);
-  //delay for ESC recognization
-  delay(7500);
-  Serial.println("ready");
-  //delay to allow the ESC to recognize the stopped signal
-}
-
-void loop() {
-  String str = "  ";
-  int pwm=0;
-  /*Commands are: 
-   * Y-yaw, R-roll, S-sway, SS-surge, H-heave
-   * combined with
-   * L-left, R-right, F-forward, B-back,U-up, D-down
-   * command format is "direction-thrust"
-   * thrust is rated from 01-05, 05 being most powerful
-   * e.g LR-02
-  */
-  String previous="";
-   while(Serial.available()){
-      Serial.println("command available");
-      //isolate direction string
-      str=Serial.readStringUntil('-');
-      Serial.println(str);
-      //isolate thrust int
-      pwm=Serial.readString().toInt();
-      Serial.println("pwm ");
-      //output command
-      Serial.print(str);
-      Serial.print(" at pwm: ");
-      Serial.print(pwm);
-      Serial.println();
-      /*max reverse pwm is 1150, max forward pwm is 1850, deadband is at 1500*/
-      /*range is 350 each way, so increments of 70 every time*/
-      //for now, assign each direction a number for switch statement(wont matter for xbox)
-      //LY-1 RY-2 LR-3 RR-4 LS-5 RS-6 FSS-7 BSS-8 UH-9 DH-10
-      if(str=="LY"){
-        //Yaw Left: (sFR,sBR)+(-sFL,-sBL)
-        sFR.writeMicroseconds(1500 + (pwm * 35));
-        sBR.writeMicroseconds(1500 + (pwm * 35));
-        sFL.writeMicroseconds(1500 - (pwm * 35));
-        sBL.writeMicroseconds(1500 - (pwm * 35));
-        delay(500);
-        sFR.writeMicroseconds(1500);
-        sBR.writeMicroseconds(1500);
-        sFL.writeMicroseconds(1500);
-        sBL.writeMicroseconds(1500);
-        Serial.print("yaw left");   
-       }
-      else if(str=="RY"){
-        //Yaw Right: (-sFR,-sBR)+(sFL,sBL)
-        sFR.writeMicroseconds(1500 - (pwm * 35));
-        sBR.writeMicroseconds(1500 - (pwm * 35));
-        sFL.writeMicroseconds(1500 + (pwm * 35));
-        sBL.writeMicroseconds(1500 + (pwm * 35));
-        delay(500);
-        sFR.writeMicroseconds(1500);
-        sBR.writeMicroseconds(1500);
-        sFL.writeMicroseconds(1500);
-        sBL.writeMicroseconds(1500);
-        Serial.print("yaw right");  
-        }
-      else if(str=="RL"){
-        //Roll Left: (-hL,hR)
-        hL.writeMicroseconds(1500 - (pwm * 70));
-        hR.writeMicroseconds(1500 + (pwm * 70));
-        delay(500);
-        hR.writeMicroseconds(1500);
-        hL.writeMicroseconds(1500);
-        Serial.print("roll left");  
-        }
-      else if(str=="RR"){
-        //Roll Right: (hL,-hR)
-        hL.writeMicroseconds(1500 + (pwm * 70));
-        hR.writeMicroseconds(1500 - (pwm * 70));
-        delay(500);
-        hR.writeMicroseconds(1500);
-        hL.writeMicroseconds(1500);
-        Serial.print("roll right");  
-        }
-      else if(str=="LS"){
-        //Sway Left: (sFR,-sBR)+(-sFL,sBL)
-        sFR.writeMicroseconds(1500 + (pwm * 35));
-        sBR.writeMicroseconds(1500 - (pwm * 35));
-        sFL.writeMicroseconds(1500 - (pwm * 35));
-        sBL.writeMicroseconds(1500 + (pwm * 35));
-        delay(500);
-        sFR.writeMicroseconds(1500);
-        sBR.writeMicroseconds(1500);
-        sFL.writeMicroseconds(1500);
-        sBL.writeMicroseconds(1500);
-        Serial.print("sway left");  
-        }
-      else if(str=="RS"){
-        //Sway Right: (sFL,-sBL)+(-sFR,sBR)
-        sFR.writeMicroseconds(1500 - (pwm * 35));
-        sBR.writeMicroseconds(1500 + (pwm * 35));
-        sFL.writeMicroseconds(1500 + (pwm * 35));
-        sBL.writeMicroseconds(1500 - (pwm * 35));
-        delay(500);
-        sFR.writeMicroseconds(1500);
-        sBR.writeMicroseconds(1500);
-        sFL.writeMicroseconds(1500);
-        sBL.writeMicroseconds(1500);
-        Serial.print("sway right");  
-        }
-      else if(str=="FSS"){
-        //Surge Forward: (sFL,sBL)+(sFR,sBR)
-        sFR.writeMicroseconds(1500 + (pwm * 35));
-        sBR.writeMicroseconds(1500 + (pwm * 35));
-        sFL.writeMicroseconds(1500 + (pwm * 35));
-        sBL.writeMicroseconds(1500 + (pwm * 35));
-        delay(500);
-        sFR.writeMicroseconds(1500);
-        sBR.writeMicroseconds(1500);
-        sFL.writeMicroseconds(1500);
-        sBL.writeMicroseconds(1500);
-        Serial.print("surge forward");  
-        }
-      else if(str=="BSS"){
-        //Surge Back: (-sFL,-sBL)+(-sFR,-sBR)
-        sFR.writeMicroseconds(1500 - (pwm * 35));
-        sBR.writeMicroseconds(1500 - (pwm * 35));
-        sFL.writeMicroseconds(1500 - (pwm * 35));
-        sBL.writeMicroseconds(1500 - (pwm * 35));
-        delay(500);
-        sFR.writeMicroseconds(1500);
-        sBR.writeMicroseconds(1500);
-        sFL.writeMicroseconds(1500);
-        sBL.writeMicroseconds(1500);
-        Serial.print("surge back"); 
-        }
-      else if(str=="UH"){
-        //Heave Up: (hR,hL)
-        hR.writeMicroseconds(1500 + (pwm * 70));
-        hL.writeMicroseconds(1500 + (pwm * 70));
-        delay(500);
-        hR.writeMicroseconds(1500);
-        hL.writeMicroseconds(1500);
-        Serial.print("heave up"); 
-        }
-      else if(str=="DH"){
-        //Heave Down: (-hR,-hL)
-        hR.writeMicroseconds(1500 - (pwm * 70));
-        hL.writeMicroseconds(1500 - (pwm * 70));
-        delay(500);
-        hR.writeMicroseconds(1500);
-        hL.writeMicroseconds(1500);
-        Serial.print("heave down");
-        }
-      previous=str;
-      //^convert to switch statement after xbox integrate
+ void loop() {
+   while (Serial.available()){
+    String input = Serial.readStringUntil('x');
+    int dir = input.substring(0, 1).toInt();
+    int thruster_value = input.substring(2, input.length() - 1).toFloat() * 230;
+    int claw_value = input.substring(2, input.length() - 1).toFloat()
+   
+    Serial.println("direction "+String(dir)+" thruster_value "+String(thruster_value));
+    //surge sway
+    if (dir == 0){
+    //  Serial.println("writing values to FRH, BRH, FLH, BLH");
+      front_right.writeMicroseconds(1500);
+      back_right.writeMicroseconds(1500);
+      front_left.writeMicroseconds(1500);
+      back_left.writeMicroseconds(1500);
+      
+      front_right.writeMicroseconds(thruster_value + 1500);
+      back_right.writeMicroseconds(thruster_value + 1500);
+      front_left.writeMicroseconds(-1 * thruster_value + 1500);
+      back_left.writeMicroseconds(-1 * thruster_value + 1500);
+      
     }
-}
+    //surge 
+    else if (dir == 1){
+      front_right.writeMicroseconds(1500);
+      back_right.writeMicroseconds(1500);
+      front_left.writeMicroseconds(1500);
+      back_left.writeMicroseconds(1500);
+      
+      front_right.writeMicroseconds(thruster_value + 1500);
+      front_left.writeMicroseconds(thruster_value + 1500);
+      back_right.writeMicroseconds(thruster_value * -1 + 1500);
+      back_left.writeMicroseconds(thruster_value * -1 + 1500);
+    }
+    //claw open
+    else if (dir == 2){
+      claw.write(170);
+    }
+    //heave
+    else if (dir == 3){
+      mid_right.writeMicroseconds(1500);
+      mid_left.writeMicroseconds(1500);    
+      mid_right.writeMicroseconds(thruster_value + 1500);
+      mid_left.writeMicroseconds(thruster_value + 1500);
+
+    }
+    //yaw
+    else if (dir == 4){
+      front_right.writeMicroseconds(1500);
+      back_right.writeMicroseconds(1500);
+      front_left.writeMicroseconds(1500);
+      back_left.writeMicroseconds(1500);
+      
+      front_right.writeMicroseconds(thruster_value + 1500);
+      back_right.writeMicroseconds(thruster_value + 1500);
+      front_left.writeMicroseconds(thruster_value * -1 + 1500);
+      back_left.writeMicroseconds(thruster_value * -1 + 1500);
+    }
+    //claw close
+    else if (dir == 5){
+      claw.write(90);
+    }
+   }   
+ }
+ 
