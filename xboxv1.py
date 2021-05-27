@@ -5,9 +5,17 @@ import serial
 BLACK = pygame.Color('black')
 WHITE = pygame.Color('white')
 
-# Open Serial port
-# arduino = serial.Serial('/dev/tty.usbmodem143201', 19200)
-arduino = serial.Serial('/dev/cu.usbserial-DN04P00J', 19200)
+Axis1 = 0
+Axis0 = 0
+Axis4 = 0
+ser = serial.Serial('/dev/tty.usbmodem143201')  # open serial port()
+
+
+def message(msg):
+    ser.write(str(msg).encode())  # send the serial message
+    # ser.close()
+    print(msg)
+
 
 # This is a simple class that will help us print to the screen.
 # It has nothing to do with the joysticks, just outputting the
@@ -52,205 +60,127 @@ pygame.joystick.init()
 
 # Get ready to print.
 textPrint = TextPrint()
-
+print("ready")
+print("wait for arduino")
+while True:
+    if ser.in_waiting:
+        break
+print("arduino ready")
+stopped = [True] * 10
 # -------- Main Program Loop -----------
 while not done:
-    #
-    # EVENT PROCESSING STEP
-    #
     # Possible joystick actions: JOYAXISMOTION, JOYBALLMOTION, JOYBUTTONDOWN,
     # JOYBUTTONUP, JOYHATMOTION
-    for event in pygame.event.get(): # User did something.
-        if event.type == pygame.QUIT: # If user clicked close.
-            done = True # Flag that we are done so we exit this loop.
-        #elif event.type == pygame.JOYBUTTONDOWN:
-            #print("Joystick button pressed.")
-        #elif event.type == pygame.JOYBUTTONUP:
-            #print("Joystick button released.")
+    for event in pygame.event.get():  # User did something.
+        # print("event happened")
+        # print(event.type)
+        if event.type == pygame.QUIT:  # If user clicked close.
+            done = True  # Flag that we are done so we exit this loop.
 
-    #
-    # DRAWING STEP
-    #
-    # First, clear the screen to white. Don't put other drawing commands
-    # above this, or they will be erased with this command.
-    screen.fill(WHITE)
-    textPrint.reset()
+        # elif event.type == pygame.JO YBUTTONDOWN:
+        #     print("Joystick button pressed.")
+        # elif event.type == pygame.JOYBUTTONUP:
+        #     print("Joystick button released.")
 
-    # Get count of joysticks.
-    joystick_count = pygame.joystick.get_count()
-
-    textPrint.tprint(screen, "Number of joysticks: {}".format(joystick_count))
-    textPrint.indent()
-
-    # For each joystick:
-    for i in range(joystick_count):
-
-
-        joystick = pygame.joystick.Joystick(i)
-        joystick.init()
-
-        textPrint.tprint(screen, "Joystick {}".format(i))
+        screen.fill(WHITE)
+        textPrint.reset()
+        # print(pygame.joystick)
+        # Get count of joysticks.
+        joystick_count = pygame.joystick.get_count()
+        # print(joystick_count)
+        textPrint.tprint(screen, "Number of joysticks: {}".format(joystick_count))
         textPrint.indent()
 
-        # Get the name from the OS for the controller/joystick.
-        name = joystick.get_name()
-        textPrint.tprint(screen, "Joystick name: {}".format(name))
+        # For each joystick:
+        for i in range(joystick_count):
+            # print("joystick")
+            joystick = pygame.joystick.Joystick(i)
+            joystick.init()
 
-        # Usually axis run in pairs, up/down for one, and left/right for
-        # the other.
-        axes = joystick.get_numaxes()
-        textPrint.tprint(screen, "Number of axes: {}".format(axes))
-        textPrint.indent()
+            textPrint.tprint(screen, "Joystick {}".format(i))
+            textPrint.indent()
 
-        # Left Joystick X axis
-        axis = joystick.get_axis(0)
-        textPrint.tprint(screen, "{} Axis LJoyX value: {:>6.3f}".format(0, axis))
-        value = 0
-        # print(axis)
-        if axis < 0:
-            thrust = -0.2
-            for x in range(1, 6):
-                if axis < thrust:
-                    value = x
-                    x = 6
+            # Get the name from the OS for the controller/joystick.
+            name = joystick.get_name()
+            textPrint.tprint(screen, "Joystick name: {}".format(name))
+
+            # Usually axis run in pairs, up/down for one, and left/right for
+            # the other.
+            axes = joystick.get_numaxes()
+            textPrint.tprint(screen, "Number of axes: {}".format(axes))
+            textPrint.indent()
+
+            for i in range(axes):
+                while ser.in_waiting:
+                    print(ser.readline())
+                axis = joystick.get_axis(i)
+                textPrint.tprint(screen, "Axis {} value: {:>6.3f}".format(i, axis))
+                if i == 2 or i == 5:
+                    if axis > -1:
+                        if not stopped[i]:
+                            stopped[i] = True
+                            message(str(i) + " 0" + "x")
+                        continue
+                    stopped[i] = False
+                    message(str(i) + " " + str(axis) + "x")
                 else:
-                    thrust -= 0.2
-            print("arduino writing")
-            arduino.write("LS-" + str(value) + "\n")
-            print("LS-" + str(value) + "\n")
+                    if axis < 0.1 and axis > -0.1:
+                        if not stopped[i]:
+                            stopped[i] = True
+                            message(str(i) + " 0" + "x")
+                        continue
+                    stopped[i] = False
+                    message(str(i) + " " + str(axis) + "x")
+            textPrint.unindent()
 
-        if axis > 0:
-            thrust = 0.2
-            for x in range(1, 6):
-                if axis > thrust:
-                    value = x
-                    x = 6
-                else:
-                    thrust += 0.2
-            arduino.write("RS-" + str(value))
 
-            if arduino.in_waiting:
-                print(arduino.read())
+            buttons = joystick.get_numbuttons()
+            textPrint.tprint(screen, "Number of buttons: {}".format(buttons))
+            textPrint.indent()
 
-        # Left Joystick Y axis
-        axis = joystick.get_axis(1)
-        textPrint.tprint(screen, "{} Axis LJoyY value: {:>6.3f}".format(1, axis))
-        #arduino.write("RS")
+            for i in range(buttons):
+              button = joystick.get_button(i)
+              textPrint.tprint(screen,"Button {:>2} value: {}".format(i, button))
 
-        # Left Trigger, value from -1 to 1
-        axis = joystick.get_axis(2)
-        textPrint.tprint(screen, "{} Axis LT value: {:>6.3f}".format(2, axis))
+            #if (i, buttons) == (3, 1):
+            #    print("Claw Open")  # 66
+            #    message('B')
+            #elif (i, buttons) == (1, 1):
+            #    print("Claw Close")  # 86
+            #    message('V')
+            #   if(i, button) == (5, 1): #72 H
+            #     print("Roll Right")
+            #     message('H')# HACK:
 
-        # Right Joystick X axis
-        axis = joystick.get_axis(3)
-        textPrint.tprint(screen, "{} Axis RJoyX value: {:>6.3f}".format(3, axis))
-        #arduino.write("RY")
-
-        # Right Joystick Y axis
-        axis = joystick.get_axis(4)
-        textPrint.tprint(screen, "{} Axis RJoyY value: {:>6.3f}".format(4, axis))
-        #arduino.write("LY")
-
-        # Right Trigger, value from -1 to 1
-        axis = joystick.get_axis(5)
-        textPrint.tprint(screen, "{} Axis RT value: {:>6.3f}".format(5, axis))
-
-        textPrint.unindent()
-
-        # Buttons
-        buttons = joystick.get_numbuttons()
-        textPrint.tprint(screen, "Number of buttons: {}".format(buttons))
-        textPrint.indent()
-
-        button = joystick.get_button(0)
-        textPrint.tprint(screen,
-                         "{:>2} Button A value: {}".format(0, button))
-        if button == 1:
-            arduino.write("UH-3")
-        if arduino.in_waiting:
-            print(arduino.read())
-
-        button = joystick.get_button(1)
-        textPrint.tprint(screen,
-                         "{:>2} Button B value: {}".format(1, button))
-        if button == 1:
-            arduino.write("DH-3")
-        if arduino.in_waiting:
-            print(arduino.read())
-
-        button = joystick.get_button(2)
-        textPrint.tprint(screen,
-                         "{:>2} Button X value: {}".format(2, button))
-
-        button = joystick.get_button(3)
-        textPrint.tprint(screen,
-                         "{:>2} Button Y value: {}".format(3, button))
-
-        button = joystick.get_button(4)
-        textPrint.tprint(screen,
-                         "{:>2} Button LB value: {}".format(4, button))
-
-        button = joystick.get_button(5)
-        textPrint.tprint(screen,
-                         "{:>2} Button RB value: {}".format(5, button))
-
-        # Left Joystick Button
-        button = joystick.get_button(6)
-        textPrint.tprint(screen,
-                         "{:>2} Button LJoyB value: {}".format(6, button))
-
-        # Right Joystick Button
-        button = joystick.get_button(7)
-        textPrint.tprint(screen,
-                         "{:>2} Button RJoyB value: {}".format(7, button))
-
-        button = joystick.get_button(8)
-        textPrint.tprint(screen,
-                         "{:>2} Button Start value: {}".format(8, button))
-
-        button = joystick.get_button(9)
-        textPrint.tprint(screen,
-                         "{:>2} Button Back value: {}".format(9, button))
-
-        button = joystick.get_button(10)
-        textPrint.tprint(screen,
-                         "{:>2} Button XBOX value: {}".format(10, button))
-
-        button = joystick.get_button(11)
-        textPrint.tprint(screen,
-                         "{:>2} Button UpPad value: {}".format(11, button))
-
-        button = joystick.get_button(12)
-        textPrint.tprint(screen,
-                         "{:>2} Button DownPad value: {}".format(12, button))
-
-        button = joystick.get_button(13)
-        textPrint.tprint(screen,
-                         "{:>2} Button LeftPad value: {}".format(13, button))
-        if button == 1:
-            arduino.write("RL-4")
-
-        button = joystick.get_button(14)
-        textPrint.tprint(screen,
-                         "{:>2} Button RightPad value: {}".format(14, button))
-        if button == 1:
-            arduino.write("RR-4")
-        textPrint.unindent()
-
-        # Hats
-        hats = joystick.get_numhats()
-        textPrint.tprint(screen, "Number of hats: {}".format(hats))
-        textPrint.indent()
-
-        # Hat position. All or nothing for direction, not a float like
-        # get_axis(). Position is a tuple of int values (x, y).
-        for j in range(hats):
-            hat = joystick.get_hat(j)
-            textPrint.tprint(screen, "Hat {} value: {}".format(j, str(hat)))
-        textPrint.unindent()
-
-        if arduino.in_waiting:
-            print(arduino.read())
+            #   elif(i, button) == (4, 1):
+            #     print("Roll Left") #71 G
+            #     message('G')
+            #   elif(i, button) == (3, 1):
+            #     print("Claw Open") #66
+            #     message('B')
+            #   elif(i, button) == (1, 1):
+            #     print("Claw Close") #86
+            #     message('V')
+            # textPrint.unindent()
+            #
+            # hats = joystick.get_numhats()
+            # textPrint.tprint(screen, "Number of hats: {}".format(hats))
+            # textPrint.indent()
+            #
+            # # Hat position. All or nothing for direction, not a float like
+            # # get_axis(). Position is a tuple of int values (x, y).
+            # for i in range(hats):
+            #   hat = joystick.get_hat(i)
+            #   textPrint.tprint(screen, "Hat {} value: {}".format(i, str(hat)))
+            #   if (hat) == (0, 1):
+            #       print("Heave Up")
+            #       message('I') #73
+            #   if (hat) == (0, -1):
+            #       print("Heave Down")
+            #       message('K')#75
+            # textPrint.unindent()
+            #
+            # textPrint.unindent()
 
     #
     # ALL CODE TO DRAW SHOULD GO ABOVE THIS COMMENT
@@ -266,3 +196,4 @@ while not done:
 # If you forget this line, the program will 'hang'
 # on exit if running from IDLE.
 pygame.quit()
+
