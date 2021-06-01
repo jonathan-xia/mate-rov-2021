@@ -8,7 +8,7 @@ WHITE = pygame.Color('white')
 Axis1 = 0
 Axis0 = 0
 Axis4 = 0
-ser = serial.Serial('/dev/tty.usbmodem143201')  # open serial port()
+ser = serial.Serial('/dev/tty.usbmodem141201')  # open serial port()
 
 
 def message(msg):
@@ -116,7 +116,7 @@ while not done:
                 axis = joystick.get_axis(i)
                 textPrint.tprint(screen, "Axis {} value: {:>6.3f}".format(i, axis))
                 if i == 2 or i == 5:
-                    if axis > -1:
+                    if axis < -0.9:
                         if not stopped[i]:
                             stopped[i] = True
                             message(str(i) + " 0" + "x")
@@ -134,13 +134,13 @@ while not done:
             textPrint.unindent()
 
 
-            buttons = joystick.get_numbuttons()
-            textPrint.tprint(screen, "Number of buttons: {}".format(buttons))
-            textPrint.indent()
+            #buttons = joystick.get_numbuttons()
+            #textPrint.tprint(screen, "Number of buttons: {}".format(buttons))
+            #textPrint.indent()
 
-            for i in range(buttons):
-              button = joystick.get_button(i)
-              textPrint.tprint(screen,"Button {:>2} value: {}".format(i, button))
+            #for i in range(buttons):
+            #  button = joystick.get_button(i)
+            #  textPrint.tprint(screen,"Button {:>2} value: {}".format(i, button))
 
             #if (i, buttons) == (3, 1):
             #    print("Claw Open")  # 66
@@ -196,4 +196,3 @@ while not done:
 # If you forget this line, the program will 'hang'
 # on exit if running from IDLE.
 pygame.quit()
-
