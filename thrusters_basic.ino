@@ -26,7 +26,7 @@
      back_left.writeMicroseconds(1500);
      mid_right.writeMicroseconds(1500);
      mid_left.writeMicroseconds(1500);
-     claw.write(90);
+     claw.write(165);
      delay(7000);
      Serial.println("ready");
  }
@@ -35,10 +35,10 @@
    while (Serial.available()){
     String input = Serial.readStringUntil('x');
     int dir = input.substring(0, 1).toInt();
-    int thruster_value = input.substring(2, input.length() - 1).toFloat() * 230;
-    int claw_value = input.substring(2, input.length() - 1).toFloat() * 85;
+    int thruster_value = input.substring(2, input.length() - 1).toFloat() * 190;
+    int claw_value = input.substring(2, input.length() - 1).toFloat() * 145;
    
-    if (dir == 2 or dir == 5){
+    if (dir == 5){
       Serial.println("direction " + String(dir) + " claw_value " + String(claw_value));
     }
     else{  
@@ -70,12 +70,6 @@
       back_right.writeMicroseconds(thruster_value * -1 + 1500);
       back_left.writeMicroseconds(thruster_value * -1 + 1500);
     }
-    //claw open
-    //else if (dir == 2){
-    //  claw.write(90);
-      
-    //  claw.write(claw_value * -1 + 90);
-    //}
     //heave
     else if (dir == 3){
       mid_right.writeMicroseconds(1500);
@@ -98,9 +92,9 @@
     }
     //claw open and close
     else if (dir == 5){
-      claw.write(90);
+      claw.write(120);
       
-      claw.write(claw_value * -1 + 90);
+      claw.write(claw_value * -1 + 165);
     }
    }   
  }
