@@ -8,8 +8,8 @@ WHITE = pygame.Color('white')
 Axis1 = 0
 Axis0 = 0
 Axis4 = 0
-#ser = serial.Serial('/dev/tty.usbmodem143201')  # open serial port()
-ser = serial.Serial('/dev/cu.usbserial-DN04P00J')  # open serial port()
+ser = serial.Serial('/dev/tty.usbmodem143101')  # open serial port()
+#ser = serial.Serial('/dev/cu.usbserial-DN04P00J')  # open serial port()
 
 
 def message(msg):
