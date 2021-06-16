@@ -8,8 +8,8 @@ WHITE = pygame.Color('white')
 Axis1 = 0
 Axis0 = 0
 Axis4 = 0
-ser = serial.Serial('/dev/tty.usbmodem143101')  # open serial port()
-#ser = serial.Serial('/dev/cu.usbserial-DN04P00J')  # open serial port()
+#ser = serial.Serial('/dev/tty.usbmodem143101')  # open serial port()
+ser = serial.Serial('/dev/cu.usbserial-DN04P00J')  # open serial port()
 
 
 def message(msg):
@@ -131,7 +131,8 @@ while not done:
                             message(str(i) + " 0" + "x")
                         continue
                     stopped[i] = False
-                    message(str(i) + " " + str((axis + 1)/2) + "x")
+                    message(str(i) + " " + str(axis) + "x")
+
             textPrint.unindent()
 
 
